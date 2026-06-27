@@ -25,8 +25,30 @@ jobs:
       - name: Lint
         run: ruff check .
 
-  # ── Job 2: Test ────────────────────────────────────────────────────────────
+  # ── Job 2: Claude API smoke test ───────────────────────────────────────────
+  # Verifies ANTHROPIC_API_KEY secret is set and the API is reachable.
+  # ANTHROPIC_API_KEY must be stored in Settings → Secrets → Actions.
+  claude:
+    needs: lint
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install anthropic SDK
+        run: pip install anthropic
+
+      - name: Call Claude API
+        run: python exercises/claude-code/hello_claude.py
+
+  # ── Job 3: Test ────────────────────────────────────────────────────────────
   # Only starts after lint passes (needs: lint).
+  # Runs in parallel with the claude job — both need lint, neither needs each other.
   # The matrix multiplies this job into 3 parallel runs — one per Python version.
   test:
     needs: lint
